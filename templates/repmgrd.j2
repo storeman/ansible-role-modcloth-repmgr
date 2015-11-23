@@ -1,0 +1,22 @@
+# {{ansible_managed}}
+# default settings for repmgrd. This file is source by /bin/sh from
+# /etc/init.d/repmgrd
+
+# disable repmgrd by default so it won't get started upon installation
+# valid values: yes/no
+REPMGRD_ENABLED={{ repmgrd_enabled }}
+
+# configuration file (required)
+REPMGRD_CONF="{{ repmgr_conf_dir }}/{{ repmgr_conf_file }}"
+
+# additional options
+#REPMGRD_OPTS=""
+
+# user to run repmgrd as
+REPMGRD_USER={{ rempgr_user }}
+
+# repmgrd binary
+#REPMGR_BIN=/usr/bin/repmgr
+
+# pid file
+#REPMGR_PIDFILE=/var/run/repmgrd.pid

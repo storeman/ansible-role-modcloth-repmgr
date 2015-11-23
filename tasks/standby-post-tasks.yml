@@ -2,11 +2,17 @@
 - name: stop postgres
   service: name=postgresql state=stopped
 
+- name: Create Data directory
+  file: path="{{ postgresql_data_directory }}" state=directory owner=postgres group=postgres
+
 - name: implode PG_DATA
   shell: rm -rf {{ postgresql_data_directory }}/*
 
 - name: clone master
-  shell: sudo su - postgres -c 'repmgr -D {{ postgresql_data_directory }} -d postgres -U repmgr -R postgres --force --verbose standby clone {{ postgres_master }}'
+  shell: sudo su - postgres -c 'repmgr -D {{ postgresql_data_directory }} -d {{ repmgr_db_name }} -p {{ postgresql_port }} -f {{ repmgr_conf_dir }}/{{ repmgr_conf_file }} -U repmgr -R postgres --force standby clone {{ postgres_master }}'
 
 - name: start postgres
   service: name=postgresql state=started
+
+- name: register standby
+  shell: sudo su - postgres -c 'repmgr -f {{ repmgr_conf_dir }}/{{ repmgr_conf_file }} --force standby register'

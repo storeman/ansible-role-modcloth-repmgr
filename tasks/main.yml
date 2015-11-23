@@ -4,33 +4,36 @@
   with_items:
   - repmgr
   - postgresql-{{ postgresql_version }}-repmgr
-
-- name: create postgresql conf dir
-  file:
-    path: "{{ repmgr_postgresql_conf_dir }}"
-    state: directory
-    recurse: yes
-- name: update postgres settings
-  template:
-    src: postgresql.conf.j2
-    dest: "{{ repmgr_postgresql_conf_dir }}/{{ repmgr_postgresql_conf_file }}"
-  register: postgresql_conf
+  register: repmgr_installed
 
 - name: create repmgr conf dir
   file:
+    recurse: yes
     path: "{{ repmgr_conf_dir }}"
     state: directory
-    recurse: yes
+
+- name: Stop repmgrd service
+  service: name=repmgrd state=stopped
+
 - name: create repmgr conf
   template:
     src: repmgr.conf.j2
     dest: "{{ repmgr_conf_dir }}/{{ repmgr_conf_file }}"
   register: repmgr_conf
+  notify: restart repmgrd
 
-- name: restart postgres
-  service: name={{ repmgr_postgresql_service_name }} state=restarted
-  when: postgresql_conf.changed
+- name: create repmgr conf
+  template:
+    src: repmgrd.j2
+    dest: "/etc/default/repmgrd"
+  notify: restart repmgrd
 
 - name: register with repmgr
   shell: "repmgr -f {{ repmgr_conf_dir }}/{{ repmgr_conf_file }} --verbose master register"
-  when: repmgr_conf.changed and repmgr_is_master|bool
+  when: repmgr_conf.changed and repmgr_installed.changed and repmgr_is_master|bool
+
+- include: standby-post-tasks.yml
+  when: (repmgr_installed.changed and not repmgr_is_master|bool) or repmgr_reinit_slave|bool
+
+- name: Start repmgrd service
+  service: name=repmgrd state=started
